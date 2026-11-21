@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Rotator Studio</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-secondary: #64748b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --border-color: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto 20px auto;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .logo p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .theme-toggle {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 4px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: var(--shadow);
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent);
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            flex: 1;
+        }
+
+        @media (max-width: 850px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Preview Workspace */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 400px;
+            overflow: hidden;
+            background-image: linear-gradient(45deg, var(--border-color) 25%, transparent 25%), 
+                              linear-gradient(-45deg, var(--border-color) 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, var(--border-color) 75%), 
+                              linear-gradient(-45deg, transparent 75%, var(--border-color) 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: 8px;
+            border: 2px dashed var(--border-color);
+        }
+
+        .workspace.dragover {
+            border-color: var(--accent);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        #imageCanvas {
+            max-width: 100%;
+            max-height: 500px;
+            object-fit: contain;
+            display: none;
+        }
+
+        .upload-placeholder {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .upload-placeholder svg {
+            width: 48px;
+            height: 48px;
+            fill: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .upload-placeholder p {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+            border: 1px solid blue;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            background-color: rgba(0,0,0,0.02);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Controls Panel */
+        .controls-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        input[type="number"] {
+            width: 70px;
+            padding: 6px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .actions-footer {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .export-options {
+            display: flex;
+            gap: 8px;
+        }
+
+        .export-options select {
+            flex: 1;
+            padding: 8px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <header>
+        <div class="logo">
+            <h1>Image Rotator Studio</h1>
+            <p>Putar & Edit Gambar Presisi Tinggi</p>
+        </div>
+        <button class="theme-toggle" id="themeToggleBtn">
+           Change Mode
+        </button>
+    </header>
+
+    <div class="container">
+        <!-- Panel Utama / Workspace -->
+        <div class="panel">
+            <div class="workspace" id="dropZone">
+                <div class="upload-placeholder" id="placeholder">
+                    <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3zM8 13h2.55v3h2.9v-3H16l-4-4-4 4z"/></svg>
+                    <p>Tarik & Lepaskan Gambar di Sini<br>atau klik tombol di bawah untuk memilih file</p>
+                    <button class="btn" onclick="document.getElementById('fileInput').click()">Pilih Gambar</button>
+                </div>
+                <canvas id="imageCanvas"></canvas>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            <div class="info-bar">
+                <span id="fileName">Belum ada file dipilih</span>
+                <span id="fileDimensions">0 x 0 px</span>
+            </div>
+        </div>
+
+        <!-- Panel Kontrol -->
+        <div class="panel" id="controlsPanel" style="opacity: 0.5; pointer-events: none;">
+            <div class="controls-title">Pengaturan Edit</div>
+
+            <div class="control-group">
+                <span class="control-label">Rotasi Cepat 90°</span>
+                <div class="btn-grid">
+                    <button class="btn btn-secondary" id="rotateLeftBtn">↺ 90° (Kiri)</button>
+                    <button class="btn btn-secondary" id="rotateRightBtn">↻ 90° (Kanan)</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">
+                    <span>Sudut Presisi</span>
+                    <span id="angleVal">0°</span>
+                </span>
+                <div class="slider-container">
+                    <input type="range" id="angleRange" min="-180" max="180" value="0">
+                    <input type="number" id="angleInput" value="0" min="-180" max="180">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Pembalikan (Flip)</span>
+                <div class="btn-grid">
+                    <button class="btn btn-secondary" id="flipHBtn">⇄ Horizontal</button>
+                    <button class="btn btn-secondary" id="flipVBtn">⇅ Vertikal</button>
+                </div>
+            </div>
+
+            <div class="actions-footer">
+                <button class="btn btn-secondary" id="resetBtn">Reset Semua</button>
+                <div class="export-options">
+                    <select id="exportFormat">
+                        <option value="image/png">PNG (Transparan)</option>
+                        <option value="image/jpeg">JPG (Putih)</option>
+                    </select>
+                    <button class="btn" id="downloadBtn">Unduh Gambar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const placeholder = document.getElementById('placeholder');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const controlsPanel = document.getElementById('controlsPanel');
+        
+        const fileNameEl = document.getElementById('fileName');
+        const fileDimensionsEl = document.getElementById('fileDimensions');
+
+        const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+        const rotateRightBtn = document.getElementById('rotateRightBtn');
+        const angleRange = document.getElementById('angleRange');
+        const angleInput = document.getElementById('angleInput');
+        const angleVal = document.getElementById('angleVal');
+        const flipHBtn = document.getElementById('flipHBtn');
+        const flipVBtn = document.getElementById('flipVBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const exportFormat = document.getElementById('exportFormat');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+        let img = new Image();
+        let currentAngle = 0;
+        let flipH = 1;
+        let flipV = 1;
+        let originalFileName = 'rotated-image';
+
+        // Tema Toggle
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.body.getAttribute('data-theme');
+            document.body.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
+        });
+
+        // Load File
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        // Drag & Drop
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            originalFileName = file.name.substring(0, file.name.lastIndexOf('.')) || 'image';
+            fileNameEl.textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                img.src = e.target.result;
+                img.onload = () => {
+                    fileDimensionsEl.textContent = `${img.width} x ${img.height} px`;
+                    placeholder.style.display = 'none';
+                    canvas.style.display = 'block';
+                    controlsPanel.style.opacity = '1';
+                    controlsPanel.style.pointerEvents = 'auto';
+                    resetTransforms();
+                    drawImage();
+                }
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function resetTransforms() {
+            currentAngle = 0;
+            flipH = 1;
+            flipV = 1;
+            updateControlsUI();
+        }
+
+        function updateControlsUI() {
+            angleRange.value = currentAngle;
+            angleInput.value = currentAngle;
+            angleVal.textContent = currentAngle + '°';
+            flipHBtn.style.borderColor = flipH === -1 ? 'var(--accent)' : 'var(--border-color)';
+            flipVBtn.style.borderColor = flipV === -1 ? 'var(--accent)' : 'var(--border-color)';
+        }
+
+        function drawImage() {
+            if (!img.src) return;
+
+            const rad = (currentAngle * Math.PI) / 180;
+            const sin = Math.abs(Math.sin(rad));
+            const cos = Math.abs(Math.cos(rad));
+
+            // Hitung ukuran canvas baru agar gambar tidak terpotong saat diputar
+            const w = img.width;
+            const h = img.height;
+            const newWidth = w * cos + h * sin;
+            const newHeight = w * sin + h * cos;
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+
+            // Pindahkan titik tumpu ke tengah canvas
+            ctx.translate(newWidth / 2, newHeight / 2);
+            ctx.rotate(rad);
+            ctx.scale(flipH, flipV);
+
+            // Gambar ulang dari titik tengah gambar asli
+            ctx.drawImage(img, -w / 2, -h / 2);
+            ctx.restore();
+        }
+
+        // Event Listeners untuk Kontrol
+        rotateLeftBtn.addEventListener('click', () => {
+            currentAngle = (currentAngle - 90) % 360;
+            updateControlsUI();
+            drawImage();
+        });
+
+        rotateRightBtn.addEventListener('click', () => {
+            currentAngle = (currentAngle + 90) % 360;
+            updateControlsUI();
+            drawImage();
+        });
+
+        angleRange.addEventListener('input', (e) => {
+            currentAngle = parseInt(e.target.value);
+            updateControlsUI();
+            drawImage();
+        });
+
+        angleInput.addEventListener('input', (e) => {
+            let val = parseInt(e.target.value);
+            if (isNaN(val)) val = 0;
+            if (val > 180) val = 180;
+            if (val < -180) val = -180;
+            currentAngle = val;
+            updateControlsUI();
+            drawImage();
+        });
+
+        flipHBtn.addEventListener('click', () => {
+            flipH *= -1;
+            updateControlsUI();
+            drawImage();
+        });
+
+        flipVBtn.addEventListener('click', () => {
+            flipV *= -1;
+            updateControlsUI();
+            drawImage();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            resetTransforms();
+            drawImage();
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!img.src) return;
+            const format = exportFormat.value;
+            
+            // Jika format JPG, buat canvas sementara berlatar belakang putih agar tidak transparan hitam
+            let downloadCanvas = canvas;
+            if (format === 'image/jpeg') {
+                downloadCanvas = document.createElement('canvas');
+                downloadCanvas.width = canvas.width;
+                downloadCanvas.height = canvas.height;
+                const dCtx = downloadCanvas.getContext('2d');
+                dCtx.fillStyle = '#FFFFFF';
+                dCtx.fillRect(0, 0, downloadCanvas.width, downloadCanvas.height);
+                dCtx.drawImage(canvas, 0, 0);
+            }
+
+            const link = document.createElement('a');
+            link.download = `${originalFileName}-rotated.${format === 'image/jpeg' ? 'jpg' : 'png'}`;
+            link.href = downloadCanvas.toDataURL(format, 1.0);
+            link.click();
+        });
+    </script>
+</body>
+</html>
